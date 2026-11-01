@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOXPILOT // MASTER BLUEPRINT V5.2</title>
+<style>
+  :root {
+    --bg: #07080a;
+    --bg-1: #0b0d10;
+    --bg-2: #0f1216;
+    --bg-3: #14181d;
+    --line: #1b2026;
+    --line-2: #262d35;
+    --line-3: #364049;
+    --text: #c9d1d9;
+    --text-2: #8b949e;
+    --text-3: #6b7684;
+    --accent: #3ee0c4;
+    --accent-2: #f5a524;
+    --danger: #ef4466;
+    --ok: #3ee08a;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", "Roboto Mono", Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  a:focus-visible, button:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14.5px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: rgba(62, 224, 196, 0.28); color: #fff; }
+
+  /* ============ 网格背景 ============ */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(62, 224, 196, 0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(62, 224, 196, 0.028) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, #000 40%, transparent 100%);
+  }
+
+  /* 顶部辉光 */
+  body::after {
+    content: "";
+    position: fixed;
+    top: -30vh; left: 50%;
+    width: 120vw; height: 60vh;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, rgba(62, 224, 196, 0.07), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ============ 顶部 HUD ============ */
+  .hud {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    height: 44px;
+    background: rgba(7, 8, 10, 0.82);
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  .hud-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+
+  .hud-mark {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(62, 224, 196, 0.7);
+    transform: rotate(45deg);
+  }
+
+  .hud-title { color: var(--text); font-weight: 600; }
+
+  .hud-sep { color: var(--line-3); }
+
+  .hud-center {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+    color: var(--text-3);
+  }
+
+  .hud-center .stat-live {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ok);
+  }
+
+  .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 6px rgba(62, 224, 138, 0.8);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+
+  .hud-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    color: var(--text-3);
+  }
+
+  .hud-right .ver {
+    color: var(--accent);
+    border: 1px solid rgba(62, 224, 196, 0.35);
+    padding: 1px 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .lang-toggle {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-2);
+    border: 1px solid var(--line-2);
+    padding: 1px 8px;
+    letter-spacing: 0.1em;
+    background: transparent;
+    cursor: pointer;
+    line-height: 1.6;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .lang-toggle:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  @media (max-width: 900px) {
+    .hud-center {
+      display: flex;
+      flex: 1;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      white-space: nowrap;
+    }
+    .hud-center::-webkit-scrollbar { display: none; }
+    .hud-center > span {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid var(--line-2);
+      border-radius: 3px;
+      color: var(--text-2);
+      white-space: nowrap;
+      letter-spacing: 0.06em;
+    }
+    .hud-center > .stat-live { color: var(--ok); }
+  }
+
+  @media (max-width: 560px) {
+    .hud { padding: 0 14px; font-size: 10px; }
+    .hud-left { gap: 8px; }
+    .hud-left .hud-sep, .hud-left span:last-child, .hud-right span:first-child { display: none; }
+  }
+
+  /* 进度条 */
+  .progress-bar {
+    position: fixed;
+    top: 44px; left: 0;
+    height: 2px;
+    width: 0;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(62, 224, 196, 0.9), 0 0 22px rgba(62, 224, 196, 0.45);
+    z-index: 101;
+  }
+
+  /* 回到顶部 + 进度环 */
+  .to-top {
+    position: fixed;
+    right: 26px; bottom: 26px;
+    width: 48px; height: 48px;
+    border: none;
+    border-radius: 50%;
+    background: var(--bg-2);
+    box-shadow: 0 0 0 1px var(--line-2), 0 8px 24px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    z-index: 102;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .to-top.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .to-top svg {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    transform: rotate(-90deg);
+  }
+  .to-top .ring-track {
+    fill: none;
+    stroke: var(--line-2);
+    stroke-width: 2.5;
+  }
+  .to-top .ring-progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+  .to-top:hover .ring-progress {
+    filter: drop-shadow(0 0 6px rgba(62, 224, 196, 0.8));
+  }
+  .to-top-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: 0.02em;
+  }
+
+  /* ============ 布局 ============ */
+  .shell {
+    position: relative;
+    z-index: 2;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: grid;
+    grid-template-columns: 208px minmax(0, 1fr);
+    gap: 72px;
+    align-items: start;
+  }
+
+  @media (max-width: 940px) {
+    .shell {
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding: 0 20px;
+    }
+  }
+
+  /* ============ 侧栏 ============ */
+  aside {
+    position: sticky;
+    top: 44px;
+    padding: 52px 0 40px;
+    max-height: calc(100vh - 44px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
+  }
+
+  aside::-webkit-scrollbar { width: 4px; }
+  aside::-webkit-scrollbar-thumb { background: var(--line-2); }
+
+  @media (max-width: 940px) {
+    aside {
+      position: static;
+      max-height: none;
+      padding: 26px 0 16px;
+      overflow: visible;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 8px;
+    }
+  }
+
+  .toc-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--text-3);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .toc-head::before {
+    content: "";
+    flex: 0 0 6px;
+    height: 6px;
+    background: var(--accent);
+  }
+
+  .toc { list-style: none; }
+
+  .toc li { margin-bottom: 2px; }
+
+  .toc a {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 7px 0 7px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-3);
+    text-decoration: none;
+    border-left: 1px solid transparent;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+  }
+
+  .toc a:hover { color: var(--text-2); border-left-color: var(--line-2); }
+
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: linear-gradient(90deg, rgba(62, 224, 196, 0.06), transparent);
+  }
+
+  .toc-num {
+    font-size: 10px;
+    color: var(--text-3);
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+  }
+
+  .toc a.active .toc-num { color: var(--accent); }
+
+  @media (max-width: 940px) {
+    .toc { display: flex; flex-wrap: wrap; gap: 2px 0; }
+    .toc li { width: 50%; }
+    .toc a { border-left: none; padding: 6px 8px 6px 0; }
+    .toc a.active { border-left: none; background: none; }
+  }
+
+  /* ============ 主内容 ============ */
+  main {
+    padding: 52px 0 100px;
+    min-width: 0;
+  }
+
+  /* ============ 封面 ============ */
+  .cover {
+    padding: 54px 0 44px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 56px;
+    position: relative;
+  }
+
+  /* 封面四角标记 */
+  .cover::before, .cover::after {
+    content: "";
+    position: absolute;
+    width: 14px; height: 14px;
+    border-color: var(--accent);
+    opacity: 0.6;
+  }
+  .cover::before { top: 0; left: 0; border-top: 1px solid; border-left: 1px solid; }
+  .cover::after { bottom: 0; right: 0; border-bottom: 1px solid; border-right: 1px solid; }
+  .cover .corner {
+    position: absolute;
+    width: 14px; height: 14px;
+    border-color: var(--accent);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .cover .corner-tr { top: 0; right: 0; border-top: 1px solid; border-right: 1px solid; }
+  .cover .corner-bl { bottom: 0; left: 0; border-bottom: 1px solid; border-left: 1px solid; }
+
+  .cover-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 26px;
+  }
+
+  .cover-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(62, 224, 196, 0.4), transparent);
+  }
+
+  .cover h1 {
+    font-family: var(--sans);
+    font-size: clamp(36px, 5.8vw, 64px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    margin-bottom: 6px;
+    color: #fff;
+  }
+
+  html[lang="en"] .cover h1 {
+    letter-spacing: -0.01em;
+  }
+
+  .cover h1 .accent {
+    color: var(--accent);
+    text-shadow: 0 0 24px rgba(62, 224, 196, 0.35);
+  }
+
+  .cover-en {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.42em;
+    color: var(--text-3);
+    margin-bottom: 30px;
+    text-transform: uppercase;
+  }
+
+  .cover-lede {
+    font-size: 15px;
+    color: var(--text-2);
+    max-width: 620px;
+    margin-bottom: 36px;
+    line-height: 1.85;
+  }
+
+  .cover-lede b { color: var(--text); font-weight: 600; }
+
+  /* 系统面板 */
+  .syspanel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    border: 1px solid var(--line-2);
+    border-top: none;
+    font-family: var(--mono);
+  }
+
+  .syspanel .cell {
+    padding: 14px 16px;
+    border-right: 1px solid var(--line);
+    border-top: 1px solid var(--line-2);
+    position: relative;
+  }
+
+  .syspanel .cell:last-child { border-right: none; }
+
+  .syspanel .k {
+    display: block;
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    color: var(--text-3);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .syspanel .v {
+    font-size: 13px;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+
+  .syspanel .v.ok { color: var(--ok); }
+  .syspanel .v.acc { color: var(--accent); }
+
+  /* 波形 */
+  .wave {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 46px;
+    margin: 30px 0 0;
+    opacity: 0.85;
+  }
+
+  .wave span {
+    flex: 1;
+    min-width: 2px;
+    height: 46px;
+    background: var(--accent);
+    border-radius: 1px;
+    opacity: 0.55;
+    transform: scaleY(0.12);
+    transform-origin: center;
+    will-change: transform, opacity;
+    box-shadow: 0 0 4px rgba(62, 224, 196, 0.4);
+  }
+
+  /* ============ 章节 ============ */
+  section {
+    margin-bottom: 76px;
+    scroll-margin-top: 70px;
+  }
+
+  .sec-head {
+    margin-bottom: 30px;
+  }
+
+  .sec-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .sec-eyebrow .bracket {
+    color: var(--text-3);
+    letter-spacing: 0;
+  }
+
+  .sec-eyebrow::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--line-2), transparent);
+  }
+
+  .sec-eyebrow, .sec-head > h2 { cursor: pointer; }
+
+  .sec-eyebrow.copied, .sec-head > h2.copied {
+    color: var(--ok);
+    text-shadow: 0 0 12px rgba(62, 224, 138, 0.35);
+  }
+
+  h2 {
+    font-family: var(--sans);
+    font-size: clamp(22px, 2.6vw, 28px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+
+  .sec-desc {
+    color: var(--text-2);
+    font-size: 14px;
+    max-width: 680px;
+    line-height: 1.85;
+  }
+
+  h3 {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--text);
+    text-transform: uppercase;
+    margin: 34px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  h3::before {
+    content: "▸";
+    color: var(--accent);
+    font-size: 11px;
+  }
+
+  p { margin-bottom: 14px; color: var(--text-2); }
+  p b, p strong { color: var(--text); font-weight: 600; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: rgba(62, 224, 196, 0.08);
+    border: 1px solid rgba(62, 224, 196, 0.15);
+    color: var(--accent);
+    padding: 0 5px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  /* ============ 路线图 ============ */
+  ol.roadmap {
+    list-style: none;
+    counter-reset: ms;
+    border-top: 1px solid var(--line);
+  }
+
+  ol.roadmap li {
+    counter-increment: ms;
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 24px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: start;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  ol.roadmap li:hover { background: rgba(62, 224, 196, 0.02); }
+
+  @media (max-width: 600px) {
+    ol.roadmap li { grid-template-columns: 1fr; gap: 6px; }
+  }
+
+  ol.roadmap li::before {
+    content: "M" counter(ms, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    padding-top: 3px;
+    border-right: 1px solid var(--line);
+    padding-right: 20px;
+    height: 100%;
+  }
+
+  .ms-body strong {
+    display: block;
+    font-family: var(--sans);
+    font-size: 15px;
+    color: #fff;
+    font-weight: 650;
+    margin-bottom: 3px;
+    letter-spacing: -0.005em;
+  }
+
+  .ms-body span {
+    font-size: 13.5px;
+    color: var(--text-2);
+    line-height: 1.7;
+  }
+
+  .warn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--accent-2);
+    background: rgba(245, 165, 36, 0.06);
+    border: 1px solid rgba(245, 165, 36, 0.22);
+    padding: 3px 10px;
+  }
+
+  .warn::before { content: "⚠"; }
+
+  /* ============ 架构 ============ */
+  .arch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--line-2);
+    background: var(--bg-1);
+    position: relative;
+  }
+
+  .arch::before, .arch::after {
+    content: "";
+    position: absolute;
+    width: 10px; height: 10px;
+    border-color: var(--accent);
+    opacity: 0.7;
+  }
+  .arch::before { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
+  .arch::after { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
+
+  @media (max-width: 700px) {
+    .arch { grid-template-columns: 1fr; }
+  }
+
+  .arch > .col {
+    padding: 24px 26px 22px;
+  }
+
+  .arch > .col + .col {
+    border-left: 1px solid var(--line-2);
+  }
+
+  @media (max-width: 700px) {
+    .arch > .col + .col { border-left: none; border-top: 1px solid var(--line-2); }
+  }
+
+  .arch-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-bottom: 3px;
+    color: var(--accent);
+  }
+
+  .arch-name .idx {
+    color: var(--text-3);
+    margin-right: 8px;
+    font-weight: 400;
+  }
+
+  .arch-stack {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-3);
+    letter-spacing: 0.02em;
+    margin-bottom: 18px;
+  }
+
+  .arch ul {
+    list-style: none;
+    font-size: 13.5px;
+    color: var(--text-2);
+  }
+
+  .arch ul li {
+    padding: 5px 0 5px 15px;
+    position: relative;
+    border-bottom: 1px dashed rgba(38, 45, 53, 0.6);
+  }
+
+  .arch ul li:last-child { border-bottom: none; }
+
+  .arch ul li::before {
+    content: "+";
+    position: absolute;
+    left: 0;
+    color: var(--line-3);
+    font-family: var(--mono);
+  }
+
+  .redline {
+    margin-top: 16px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: var(--danger);
+    background: rgba(239, 68, 102, 0.05);
+    border-left: 2px solid var(--danger);
+  }
+
+  .redline b { color: var(--danger); font-weight: 700; letter-spacing: 0.06em; }
+
+  .channel {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line-2);
+    padding: 11px 26px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-3);
+    letter-spacing: 0.03em;
+    background: var(--bg-2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+
+  .channel b { color: var(--accent); font-weight: 600; }
+
+  /* ============ 能力 ============ */
+  .caps {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+
+  .cap {
+    background: var(--bg-1);
+    padding: 22px 22px 20px;
+    transition: background 0.2s;
+    position: relative;
+  }
+
+  .cap:hover { background: var(--bg-2); }
+
+  .cap::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 0; height: 1px;
+    background: var(--accent);
+    transition: width 0.35s ease;
+  }
+
+  .cap:hover::before { width: 100%; }
+
+  .cap-idx {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-3);
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .cap-idx .glyph { color: var(--accent); font-size: 11px; }
+
+  .cap-title {
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 650;
+    color: #fff;
+    margin-bottom: 8px;
+    letter-spacing: -0.005em;
+  }
+
+  .cap-desc {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.75;
+    margin-bottom: 12px;
+  }
+
+  .cap-desc code { font-size: 11.5px; }
+
+  .cap-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: var(--text-3);
+    border: 1px solid var(--line-2);
+    padding: 1px 7px;
+  }
+
+  /* ============ FSM ============ */
+  .states {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 22px;
+  }
+
+  .states span {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    padding: 4px 9px;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    background: var(--bg-1);
+  }
+
+  .states span.err {
+    color: var(--danger);
+    border-color: rgba(239, 68, 102, 0.4);
+    background: rgba(239, 68, 102, 0.04);
+  }
+
+  /* 状态 chip 联动：chip 可点击，激活态 + FSM 命中行高亮 */
+  .states span {
+    cursor: pointer;
+  }
+  .states span.active {
+    color: var(--accent);
+    border-color: rgba(62, 224, 196, 0.6);
+    background: rgba(62, 224, 196, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(62, 224, 196, 0.35);
+  }
+  tr.fsm-hit td {
+    background: rgba(62, 224, 196, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(62, 224, 196, 0.55);
+  }
+  tr.fsm-hit td:first-child,
+  tr.fsm-hit td:nth-child(4) {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .table-scroll { position: relative; }
+
+  .table-hint {
+    display: none;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+    text-align: center;
+    transition: opacity 0.25s;
+  }
+  .table-hint.is-off { display: none !important; }
+  .table-hint.gone { opacity: 0; pointer-events: none; }
+
+  @media (max-width: 940px) {
+    .table-hint { display: block; }
+  }
+
+  .table-wrap {
+    border: 1px solid var(--line-2);
+    overflow-x: auto;
+    background: var(--bg-1);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    min-width: 780px;
+  }
+
+  thead th {
+    text-align: left;
+    padding: 11px 16px 11px 0;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    font-weight: 600;
+    border-bottom: 1px solid var(--line-2);
+    background: var(--bg-2);
+    white-space: nowrap;
+  }
+
+  thead th:first-child { padding-left: 16px; }
+
+  tbody td {
+    padding: 10px 16px 10px 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--text-2);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  tbody td:first-child { padding-left: 16px; }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody tr:hover td { background: rgba(62, 224, 196, 0.025); }
+
+  tbody td:first-child {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  tbody td:nth-child(2) { color: var(--text); }
+
+  tbody td:nth-child(4) {
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: nowrap;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+
+  .cond {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--accent-2);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  .act-hot { color: var(--danger); }
+
+  /* SLA */
+  .sla {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    margin-top: 22px;
+    border: 1px solid var(--line-2);
+    background: var(--bg-1);
+  }
+
+  .sla .cell {
+    padding: 14px 18px;
+    border-right: 1px solid var(--line);
+  }
+
+  .sla .cell:last-child { border-right: none; }
+
+  .sla .k {
+    display: block;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    color: var(--text-3);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .sla .v {
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+
+  .sla .v.hot {
+    color: var(--danger);
+    font-weight: 600;
+    text-shadow: 0 0 12px rgba(239, 68, 102, 0.4);
+  }
+
+  .sla-note {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-3);
+    letter-spacing: 0.02em;
+  }
+
+  /* ============ 代码 ============ */
+  .code {
+    margin: 18px 0;
+    border: 1px solid var(--line-2);
+    background: #0a0d10;
+    position: relative;
+  }
+
+  .code-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-2);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+  }
+
+  .code-path { color: var(--text-2); }
+  .code-path::before { content: "// "; color: var(--text-3); }
+
+  .code-lang {
+    color: var(--text-3);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .code-head-fill {
+    flex: 1 1 auto;
+    min-width: 18px;
+    margin: 0 14px;
+    border-bottom: 1px dotted rgba(122, 135, 150, 0.55);
+    transform: translateY(3px);
+  }
+
+  .code-copy {
+    flex: 0 0 auto;
+    margin-left: 14px;
+    padding: 3px 9px;
+    border: 1px solid var(--line-2);
+    border-radius: 4px;
+    background: var(--bg-1);
+    color: var(--text-2);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .code-copy:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(62, 224, 196, 0.06);
+  }
+  .code-copy.copied {
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+
+  /* 桌面端（hover 能力设备）：hover code-head 才显示 COPY；移动端无 hover 默认常显 */
+  @media (hover: hover) and (pointer: fine) {
+    .code-copy { opacity: 0; pointer-events: none; }
+    .code-head:hover .code-copy { opacity: 1; pointer-events: auto; }
+  }
+
+  pre {
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.75;
+    color: #b8c4cf;
+    tab-size: 2;
+  }
+
+  pre .c { color: #4a5561; font-style: italic; }
+  pre .k { color: #5fc9e8; }
+  pre .fn { color: #f0c674; }
+  pre .s { color: #8fbf7f; }
+  pre .n { color: #e8836b; }
+  pre .t { color: #dca3e0; }
+
+  /* 移动端：代码块压缩字号与内边距，横向滚动与右侧渐隐保留 */
+  @media (max-width: 560px) {
+    pre {
+      font-size: 11px;
+      padding: 12px;
+    }
+  }
+
+  .code-foot {
+    padding: 9px 18px;
+    border-top: 1px solid var(--line);
+    background: var(--bg-2);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-3);
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+  }
+
+  .code-foot b { color: var(--accent); font-weight: 600; }
+
+  /* 提示卡：荧光描边 + 浅底注释卡片 */
+  .note-card {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 26px 0 0;
+    padding: 12px 16px;
+    border: 1px solid rgba(62, 224, 196, 0.35);
+    background: rgba(62, 224, 196, 0.05);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    line-height: 1.7;
+    color: var(--text-2);
+  }
+  .note-card .note-mark {
+    flex: 0 0 auto;
+    color: var(--accent);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+  }
+
+  /* ============ 宪法 ============ */
+  ol.laws {
+    list-style: none;
+    counter-reset: law;
+    border-top: 1px solid var(--line);
+  }
+
+  ol.laws li {
+    counter-increment: law;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 18px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13.5px;
+    color: var(--text-2);
+    line-height: 1.7;
+    transition: background 0.15s;
+  }
+
+  ol.laws li:hover { background: rgba(62, 224, 196, 0.02); }
+
+  ol.laws li::before {
+    content: counter(law, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+
+  ol.laws li b {
+    display: block;
+    color: #fff;
+    font-weight: 650;
+    font-size: 13.5px;
+    margin-bottom: 2px;
+    font-family: var(--sans);
+  }
+
+  @media (max-width: 560px) {
+    ol.laws li { grid-template-columns: 40px 1fr; gap: 10px; }
+  }
+
+  /* ============ 变更记录 ============ */
+  .changelog {
+    border: 1px solid var(--line-2);
+    background: var(--bg-1);
+  }
+
+  .changelog .row {
+    display: grid;
+    grid-template-columns: 74px 1fr auto;
+    gap: 18px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    align-items: baseline;
+    transition: background 0.15s;
+  }
+
+  .changelog .row:last-child { border-bottom: none; }
+  .changelog .row:hover { background: var(--bg-2); }
+
+  @media (max-width: 600px) {
+    .changelog .row { grid-template-columns: 60px 1fr; gap: 8px; }
+    .changelog .row .badge { grid-column: 2; justify-self: start; }
+  }
+
+  .changelog .id {
+    color: var(--danger);
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  .changelog .txt {
+    color: var(--text-2);
+    font-family: var(--sans);
+    font-size: 13px;
+    letter-spacing: 0;
+    line-height: 1.6;
+  }
+
+  .changelog .badge {
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    color: var(--ok);
+    border: 1px solid rgba(62, 224, 138, 0.3);
+    background: rgba(62, 224, 138, 0.05);
+    padding: 1px 7px;
+  }
+
+  .changelog .badge.note {
+    color: var(--text-2);
+    border-color: var(--line-2);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  /* ============ 结尾 ============ */
+  .closing {
+    margin-top: 30px;
+    padding: 28px 0 0;
+    border-top: 1px solid var(--line);
+    font-family: var(--sans);
+    font-size: 15px;
+    color: var(--text-2);
+    line-height: 1.9;
+    max-width: 640px;
+  }
+
+  .closing em {
+    font-style: normal;
+    color: var(--accent);
+    font-weight: 600;
+    text-shadow: 0 0 16px rgba(62, 224, 196, 0.35);
+  }
+
+  /* ============ 页脚 ============ */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 26px 0 60px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-3);
+    line-height: 1.9;
+    letter-spacing: 0.04em;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px 26px;
+  }
+
+  footer .dc span {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--line-3);
+    margin-bottom: 3px;
+  }
+
+  footer .dc b {
+    color: var(--text-2);
+    font-weight: 400;
+    font-family: var(--mono);
+  }
+
+  footer .dc b.ok { color: var(--ok); }
+
+  /* ============ 入场 ============ */
+  .fade {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .fade.in { opacity: 1; transform: translateY(0); }
+
+  /* 轻微扫描线 */
+  .scanline {
+    position: fixed;
+    left: 0; right: 0;
+    height: 30vh;
+    pointer-events: none;
+    z-index: 3;
+    background: linear-gradient(180deg, transparent, rgba(62, 224, 196, 0.018), transparent);
+    animation: scan 24s linear infinite;
+    animation-play-state: paused;
+  }
+  .scanline.run { animation-play-state: running; }
+
+  @keyframes scan {
+    0% { top: -30vh; }
+    100% { top: 100vh; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scanline, .wave span, .dot { animation: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* 打印优化 */
+  @media print {
+    .scanline, .wave, .progress-bar, .hud, .to-top { display: none !important; }
+    .code-copy, .table-hint { display: none !important; }
+    table, tr, td { page-break-inside: avoid; }
+    pre { white-space: pre-wrap; word-wrap: break-word; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 扫描线 -->
+<div class="scanline"></div>
+
+<!-- 顶部 HUD -->
+<header class="hud">
+  <div class="hud-left">
+    <div class="hud-mark"></div>
+    <span class="hud-title">VOXPILOT</span>
+    <span class="hud-sep">//</span>
+    <span>MASTER BLUEPRINT</span>
+  </div>
+  <div class="hud-center">
+    <span class="stat-live"><span class="dot"></span><span data-i18n="hud.sys">SYSTEM NOMINAL</span></span>
+    <span data-i18n="hud.fsm">FSM: 9 STATES</span>
+    <span data-i18n="hud.reviews">REVIEWS · 6 ROUNDS</span>
+    <span data-i18n="hud.sla">LATENCY SLA: OK</span>
+  </div>
+  <div class="hud-right">
+    <span>DOC-5.2</span>
+    <span class="ver">FROZEN</span>
+    <button class="lang-toggle" id="langToggle" type="button" data-i18n-aria="ui.langToggle">EN</button>
+  </div>
+</header>
+<div class="progress-bar" id="progress"></div>
+
+<!-- 回到顶部 + 进度环 -->
+<button class="to-top" id="toTop" type="button" data-i18n-aria="ui.toTop" aria-label="回到顶部">
+  <svg viewBox="0 0 48 48" aria-hidden="true">
+    <circle class="ring-track" cx="24" cy="24" r="20.5"></circle>
+    <circle class="ring-progress" cx="24" cy="24" r="20.5"></circle>
+  </svg>
+  <span class="to-top-num" id="toTopNum">00</span>
+</button>
+
+<div class="shell">
+
+  <!-- 侧栏目录 -->
+  <aside>
+    <div class="toc-head">INDEX</div>
+    <ul class="toc">
+      <li><a href="#s0"><span class="toc-num">00</span><span data-i18n="toc.s0">摘要 / ABSTRACT</span></a></li>
+      <li><a href="#s1"><span class="toc-num">01</span><span data-i18n="toc.s1">愿景 / VISION</span></a></li>
+      <li><a href="#s2"><span class="toc-num">02</span><span data-i18n="toc.s2">路线图 / ROADMAP</span></a></li>
+      <li><a href="#s3"><span class="toc-num">03</span><span data-i18n="toc.s3">架构 / ARCHITECTURE</span></a></li>
+      <li><a href="#s4"><span class="toc-num">04</span><span data-i18n="toc.s4">能力 / CAPABILITIES</span></a></li>
+      <li><a href="#s5"><span class="toc-num">05</span><span data-i18n="toc.s5">状态机 / FSM</span></a></li>
+      <li><a href="#s6"><span class="toc-num">06</span><span data-i18n="toc.s6">实现 / IMPLEMENTATION</span></a></li>
+      <li><a href="#s7"><span class="toc-num">07</span><span data-i18n="toc.s7">宪法 / CONSTITUTION</span></a></li>
+      <li><a href="#s8"><span class="toc-num">08</span><span data-i18n="toc.s8">记录 / CHANGELOG</span></a></li>
+    </ul>
+  </aside>
+
+  <main>
+
+    <!-- 封面 -->
+    <div class="cover">
+      <i class="corner corner-tr"></i><i class="corner corner-bl"></i>
+      <div class="cover-label" data-i18n="cover.label">PROJECT SPECIFICATION · REV 5.2</div>
+      <h1>VOX<span class="accent">PILOT</span><br><span data-i18n="cover.subtitle">智能语音领航员</span></h1>
+      <div class="cover-en" data-i18n="cover.en">AMBIENT COPILOT FOR THE DESKTOP</div>
+      <p class="cover-lede" data-i18n="cover.lede">
+        一款具备“眼观六路，耳听八方”能力的 AI PC 环境副驾。本规格书记录其经六轮架构与工程风险评审后的定稿设计，可作为唯一权威施工图纸。
+      </p>
+
+      <div class="syspanel">
+        <div class="cell">
+          <span class="k" data-i18n="cover.sp.arch">ARCHITECTURE</span>
+          <span class="v">Microservice</span>
+        </div>
+        <div class="cell">
+          <span class="k" data-i18n="cover.sp.client">CLIENT</span>
+          <span class="v acc">PyQt6 + C++</span>
+        </div>
+        <div class="cell">
+          <span class="k" data-i18n="cover.sp.engine">ENGINE</span>
+          <span class="v acc">FastAPI</span>
+        </div>
+        <div class="cell">
+          <span class="k" data-i18n="cover.sp.status">STATUS</span>
+          <span class="v ok">FROZEN</span>
+        </div>
+        <div class="cell">
+          <span class="k" data-i18n="cover.sp.next">NEXT PHASE</span>
+          <span class="v">Milestone 1</span>
+        </div>
+      </div>
+
+      <div class="wave" id="wave"></div>
+    </div>
+
+    <!-- 00 -->
+    <section id="s0" class="fade">
+      <div class="sec-head">
+        <div class="sec-eyebrow"><span class="bracket">[</span> §00 · ABSTRACT <span class="bracket">]</span></div>
+        <h2>摘要</h2>
+        <p class="sec-desc" data-i18n="sec.0.desc">
+          VoxPilot 的目标是做一个能听、能看、能动手、也能记住的桌面副驾。本规格书不是概念稿，而是经过多轮代码级复审后的施工图纸。
+        </p>
+      </div>
+
+      <p>
+        VoxPilot 采用<b>前后端分离的微服务架构</b>：轻量客户端负责 UI、音频采集播放与状态机，本地推理引擎负责模型推理、工具执行与记忆检索。C++ 承担低延迟音频底座，Python 负责逻辑调度与生态整合。
+      </p>
+      <p>
+        经过六轮评审，文档中所有会导致真机崩溃的实现缺陷已全部修复，包括 pybind11 的 GIL 释放位置、SPSC 队列的并发语义、工具确认机制的竞态与内存泄漏、慢任务进程隔离的 pickle 约束，以及状态机的断头路。V5.2 可作为唯一权威文档冻结，进入 Milestone 1 编码。
+      </p>
+    </section>
+
+    <!-- 01 -->
+    <section id="s1" class="fade">
+      <div class="sec-head">
+        <div class="sec-eyebrow"><span class="bracket">[</span> §01 · VISION <span class="bracket">]</span></div>
+        <h2>愿景与哲学</h2>
+        <p class="sec-desc" data-i18n="sec.1.desc">始于语音，不止于语音。</p>
+      </div>
+
+      <p>
+        VoxPilot 想做的是一个<b>环境副驾（Ambient Copilot）</b>——它不只在你喊它的时候响应，也理解你所在的屏幕、正在播放的会议、以及你此刻的状态。它需要“手、脑、眼、耳、魂”五个维度的能力，才能称得上副驾。
+      </p>
+
+      <h3>核心哲学</h3>
+      <p>
+        <b>Python 负责逻辑调度与生态整合，C++ 负责底层性能。</b>先单体跑通闭环，后微服务拆分；在线极速响应，离线降级可用。这条原则决定了后面所有的技术选型与工程边界。
+      </p>
+    </section>
+
+    <!-- 02 -->
+    <section id="s2" class="fade">
+      <div class="sec-head">
+        <div class="sec-eyebrow"><span class="bracket">[</span> §02 · ROADMAP <span class="bracket">]</span></div>
+        <h2>落地路线图</h2>
+        <p class="sec-desc" data-i18n="sec.2.desc">不要在第一天就去死磕微服务或 AEC。按以下里程碑推进，确保项目存活并平滑迭代。</p>
+      </div>
+
+      <ol class="roadmap">
+        <li>
+          <div class="ms-body">
+            <strong>环境搭建</strong>
+            <span>Python 3.11 + venv，建立 <code>core/</code>、<code>modules/</code>、<code>cpp_src/</code>、<code>ui/</code> 空目录。</span>
+          </div>
+        </li>
+        <li>
+          <div class="ms-body">
+            <strong>极简终端闭环</strong>
+            <span>录音 5 秒 → faster-whisper 识别 → 云端 API 回答 → edge-tts 播放。验证硬件与模型链路。</span>
+          </div>
+        </li>
+        <li>
+          <div class="ms-body">
+            <strong>UI 与异步调度</strong>
+            <span>PyQt6 搭建界面，录音与网络请求放入 QThread，通过信号槽通信，确保界面不卡顿。</span>
+          </div>
+        </li>
+        <li>
+          <div class="ms-body">
+            <strong>底层重构与打断</strong>
+            <span>C++ SPSC 无锁环形缓冲，webrtcvad 断句，实现 Barge-in 打断。</span>
+            <span class="warn">动手前必须先补并发 pytest</span>
+          </div>
+        </li>
+        <li>
+          <div class="ms-body">
+            <strong>手和脑</strong>
+            <span>接入 Function Calling（带线程安全的异步确认），封装 Alist 直链下载，让副驾能真正干活。</span>
+          </div>
+        </li>
+        <li>
+          <div class="ms-body">
+            <strong>微服务化与多模态</strong>
+            <span>接入视觉感知，ASR / LLM / TTS 独立成 FastAPI 服务，客户端仅保留音频硬件交互。</span>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- 03 -->
+    <section id="s3" class="fade">
+      <div class="sec-head">
+        <div class="sec-eyebrow"><span class="bracket">[</span> §03 · ARCHITECTURE <span class="bracket">]</span></div>
+        <h2>物理架构</h2>
+        <p class="sec-desc" data-i18n="sec.3.desc">客户端轻量秒开，引擎承载重型推理。两端通过 WebSocket / gRPC 通信，严禁跨进程传递原始 PCM 流。</p>
+      </div>
+
+      <div class="arch">
+        <div class="col">
+          <div class="arch-name"><span class="idx">C/</span>VoxPilot-Client</div>
+          <div class="arch-stack">PyQt6 + C++ / pybind11</div>
+          <ul>
+            <li>UI 渲染与驾驶舱</li>
+            <li>音频采集与播放</li>
+            <li>FSM 状态机</li>
+            <li>AudioFocus 音频焦点</li>
+          </ul>
+          <div class="redline"><b>REDLINE</b> AEC、VAD、唤醒词必须留在 Client 的本地 C++ 层，绝不跨进程。</div>
+        </div>
+
+        <div class="col">
+          <div class="arch-name"><span class="idx">E/</span>VoxPilot-Engine</div>
+          <div class="arch-stack">FastAPI + Python</div>
+          <ul>
+            <li>模型推理（ASR / LLM / TTS）</li>
+            <li>工具执行与确认</li>
+            <li>RAG 与长期记忆</li>
+            <li>多线程下载器</li>
+          </ul>
+          <div class="redline"><b>PRIVACY</b> 默认本地部署（127.0.0.1）。远程 Engine 时，截图与录音必须强制弹窗确认，UI 常驻角标。</div>
+        </div>
+
+        <div class="channel">
+          <span><b>CHANNEL</b> WebSocket / gRPC</span>
+          <span><b>UPSTREAM</b> 语音片段 + 事件</span>
+          <span><b>DOWNSTREAM</b> 流式文本 + 音频文件</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section id="s4" class="fade">
+      <div class="sec-head">
+        <div class="sec-eyebrow"><span class="bracket">[</span> §04 · CAPABILITIES <span class="bracket">]</span></div>
+        <h2>五大核心能力</h2>
+        <p class="sec-desc" data-i18n="sec.4.desc">围绕“手、脑、眼、耳、魂”五个维度构建完整的 Agent 闭环。</p>
+      </div>
+
+      <div class="caps">
+        <div class="cap">
+          <div class="cap-idx"><span>CAP-01 · HAND</span><span class="glyph">◈</span></div>
+          <div class="cap-title" data-i18n="cap.1.title">手 · 工具系统</div>
+          <div class="cap-desc" data-i18n="cap.1.desc">
+            云端 Function Calling 执行系统操作；高危工具异步确认，慢任务进程隔离，双向白名单防止幻觉误操作。
+          </div>
+          <span class="cap-tag" data-i18n="cap.1.tag">job_id 贯穿 · 队列深度 16</span>
+        </div>
+        <div class="cap">
+          <div class="cap-idx"><span>CAP-02 · MIND</span><span class="glyph">◈</span></div>
+          <div class="cap-title" data-i18n="cap.2.title">脑 · 记忆与 RAG</div>
+          <div class="cap-desc"><span data-i18n="cap.2.desc.pre">短期保留最近 N 轮对话；长期用 ChromaDB 存储，后台异步提取实体与向量化，注册 </span><code>search_memory</code><span data-i18n="cap.2.desc.post"> 按需检索。</span></div>
+          <span class="cap-tag" data-i18n="cap.2.tag">ChromaDB · 异步向量化</span>
+        </div>
+        <div class="cap">
+          <div class="cap-idx"><span>CAP-03 · EYE</span><span class="glyph">◈</span></div>
+          <div class="cap-title" data-i18n="cap.3.title">眼 · 屏幕感知</div>
+          <div class="cap-desc"><span data-i18n="cap.3.desc.pre">优先 </span><code>uiautomation</code><span data-i18n="cap.3.desc.mid"> 提取 UI 文本树，异常则降级为 </span><code>mss</code><span data-i18n="cap.3.desc.post"> 截图；上传云端需显式确认。</span></div>
+          <span class="cap-tag" data-i18n="cap.3.tag">文本树优先 · 隐私确认</span>
+        </div>
+        <div class="cap">
+          <div class="cap-idx"><span>CAP-04 · EAR</span><span class="glyph">◈</span></div>
+          <div class="cap-title" data-i18n="cap.4.title">耳 · 系统内录</div>
+          <div class="cap-desc"><span data-i18n="cap.4.desc.pre">WASAPI Loopback 抓取扬声器输出，能量过滤后用 </span><code>faster-whisper (tiny)</code><span data-i18n="cap.4.desc.post"> 转文字，触发会议纪要入库。</span></div>
+          <span class="cap-tag" data-i18n="cap.4.tag">WASAPI · 静音过滤</span>
+        </div>
+        <div class="cap">
+          <div class="cap-idx"><span>CAP-05 · SOUL</span><span class="glyph">◈</span></div>
+          <div class="cap-title" data-i18n="cap.5.title">魂 · 情绪与主动</div>
+          <div class="cap-desc" data-i18n="cap.5.desc">
+            情感 TTS 动态调节语速音调；EventScheduler 守护线程按抑制规则主动播报，绝不打搅会议与 TTS。
+          </div>
+          <span class="cap-tag" data-i18n="cap.5.tag">抑制规则 · 优先级队列</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section id="s5" class="fade">
+      <div class="sec-head">
+        <div class="sec-eyebrow"><span class="bracket">[</span> §05 · STATE MACHINE <span class="bracket">]</span></div>
+        <h2>状态机</h2>
+        <p class="sec-desc" data-i18n="sec.5.desc">
+          8 + 1 态。任何异常必须归入 ERROR 态，防止死循环；prev_state_stack 深度上限 2，栈满拒绝新的主动播报。
+        </p>
+      </div>
+
+      <div class="states">
+        <span role="button" tabindex="0" aria-pressed="false">IDLE</span>
+        <span role="button" tabindex="0" aria-pressed="false">LISTENING</span>
+        <span role="button" tabindex="0" aria-pressed="false">ASR</span>
+        <span role="button" tabindex="0" aria-pressed="false">LLM</span>
+        <span role="button" tabindex="0" aria-pressed="false">TTS</span>
+        <span role="button" tabindex="0" aria-pressed="false">PLAYING</span>
+        <span role="button" tabindex="0" aria-pressed="false">AMBIENT_MODE</span>
+        <span role="button" tabindex="0" aria-pressed="false">PROACTIVE_SPEAKING</span>
+        <span class="err" role="button" tabindex="0" aria-pressed="false">ERROR</span>
+      </div>
+
+      <div class="table-scroll">
+        <div class="table-wrap" id="fsmTableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">源态</th>
+                <th scope="col">事件</th>
+                <th scope="col">条件</th>
+                <th scope="col">目标</th>
+                <th scope="col">动作</th>
+              </tr>
+            </thead>
+            <tbody>
+            <tr><td>IDLE</td><td>唤醒词</td><td>—</td><td>LISTENING</td><td>亮屏、开 ASR 上传</td></tr>
+            <tr><td>IDLE</td><td>进入 AMBIENT 快捷键</td><td>—</td><td>AMBIENT_MODE</td><td>开 WASAPI 内录、禁 Barge-in</td></tr>
+            <tr><td>AMBIENT_MODE</td><td>唤醒词</td><td>—</td><td>LISTENING</td><td>关内录、恢复 Barge-in、开 ASR 上传、亮屏</td></tr>
+            <tr><td>AMBIENT_MODE</td><td>关闭内录快捷键</td><td>—</td><td>IDLE</td><td>关内录、恢复 Barge-in、复位 AudioFocus</td></tr>
+            <tr><td>AMBIENT_MODE</td><td>语音「退出会议模式」</td><td>—</td><td>IDLE</td><td>关内录、恢复 Barge-in、复位 AudioFocus</td></tr>
+            <tr><td>LISTENING</td><td>VAD 静音 &gt; 800ms</td><td><span class="cond">有语音帧</span></td><td>ASR</td><td>切音频 → Engine</td></tr>
+            <tr><td>LISTENING</td><td>VAD 静音 &gt; 3s</td><td><span class="cond">从未有语音帧</span></td><td>IDLE</td><td>提示没听清、复位 AudioFocus</td></tr>
+            <tr><td>LISTENING</td><td>VAD 人声持续</td><td>—</td><td>保持 LISTENING</td><td>3s 计时作废，切换到 800ms 计时</td></tr>
+            <tr><td>ASR</td><td>识别完成</td><td><span class="cond">text 非空</span></td><td>LLM</td><td>拼 Prompt、请求 LLM，tool_round = 0</td></tr>
+            <tr><td>LLM</td><td>流结束</td><td><span class="cond">tool_calls 且 round &lt; 3</span></td><td>LLM（自环）</td><td>执行工具 → 结果追加 → round+=1 重新请求</td></tr>
+            <tr><td>LLM</td><td>流结束</td><td><span class="cond">tool_calls 且 round ≥ 3</span></td><td>TTS</td><td>强制收尾：“工具调用过多，直接回答”</td></tr>
+            <tr><td>LLM</td><td>流结束</td><td><span class="cond">finish_reason = stop</span></td><td>TTS</td><td>文本送 TTS</td></tr>
+            <tr><td>TTS</td><td>首包就绪</td><td>—</td><td>PLAYING</td><td>AudioFocus 三分法处理</td></tr>
+            <tr><td>PLAYING</td><td>队列耗尽</td><td>—</td><td>IDLE</td><td>AudioFocus 复位</td></tr>
+            <tr><td>PLAYING</td><td>VAD 人声</td><td><span class="cond">not in_ambient</span></td><td>LISTENING</td><td class="act-hot">Barge-in：停 TTS、补传 300ms 缓冲、恢复 ASR 上传、复位 AudioFocus</td></tr>
+            <tr><td>PLAYING</td><td>VAD 人声</td><td><span class="cond">in_ambient</span></td><td>保持</td><td>仅记日志，不打断播报</td></tr>
+            <tr><td>任意态</td><td>EventScheduler 触发</td><td><span class="cond">满足抑制规则 + 栈深 &lt; 2</span></td><td>PROACTIVE_SPEAKING</td><td>压栈保存前态、播报（不关 ASR 上传）</td></tr>
+            <tr><td>PROACTIVE_SPEAKING</td><td>播报完成</td><td>—</td><td>出栈恢复</td><td>恢复前态</td></tr>
+            <tr><td>PROACTIVE_SPEAKING</td><td>VAD 人声</td><td><span class="cond">not in_ambient</span></td><td>LISTENING</td><td>停播报、恢复 ASR 上传（幂等）、出栈恢复前态</td></tr>
+            <tr><td>ERROR</td><td>用户点击重启</td><td><span class="cond">重初始化成功</span></td><td>IDLE</td><td>重开音频设备、复位 AudioFocus、清空 ring buffer</td></tr>
+            <tr><td>ERROR</td><td>用户点击重启</td><td><span class="cond">重初始化失败</span></td><td>ERROR</td><td>提示错误详情，保持 ERROR</td></tr>
+            <tr><td>任意态</td><td>初始化失败 / 致命异常</td><td>—</td><td>ERROR</td><td class="act-hot">强制复位 AudioFocus + 关闭并重开音频设备</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="table-hint">← 左右滑动查看 →</div>
+      </div>
+
+      <div class="sla">
+        <div class="cell"><span class="k" data-i18n="sla.1">VAD 断句</span><span class="v">&lt; 300ms</span></div>
+        <div class="cell"><span class="k" data-i18n="sla.2">ASR 首字</span><span class="v">&lt; 500ms</span></div>
+        <div class="cell"><span class="k" data-i18n="sla.3">LLM 首 Token</span><span class="v">&lt; 800ms</span></div>
+        <div class="cell"><span class="k" data-i18n="sla.4">TTS 首包</span><span class="v">&lt; 300ms</span></div>
+        <div class="cell"><span class="k" data-i18n="sla.5">打断响应</span><span class="v hot">&lt; 150ms</span></div>
+      </div>
+      <div class="sla-note">
+        CLOCK BASE · time.monotonic_ns() · 跨进程可比 · 协议中带 t_start_ns 字段
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section id="s6" class="fade">
+      <div class="sec-head">
+        <div class="sec-eyebrow"><span class="bracket">[</span> §06 · IMPLEMENTATION <span class="bracket">]</span></div>
+        <h2>关键实现</h2>
+        <p class="sec-desc" data-i18n="sec.6.desc">V5.2 已修复全部 P0 级缺陷：GIL 精准释放、SPSC 语义正确、工具确认零竞态、慢任务进程隔离、job_id 贯穿。</p>
+      </div>
+
+      <h3>SPSC 环形缓冲 · GIL 只包裹搬运循环</h3>
+      <div class="code">
+        <div class="code-head">
+          <span class="code-path">cpp_src/audio_ringbuf/ring_buffer.cpp</span>
+          <span class="code-head-fill"></span>
+          <span class="code-lang">C++ · PYBind11</span>
+          <button class="code-copy" type="button">COPY</button>
+        </div>
+<pre><span class="c">// 实际可用容量 = max_capacity - 1，防止 head == tail 空满冲突</span>
+<span class="k">size_t</span> <span class="fn">do_push</span>(<span class="k">const</span> int16_t* p, <span class="k">size_t</span> n) {
+    <span class="k">size_t</span> h = head.<span class="fn">load</span>(std::memory_order_relaxed);
+    <span class="k">size_t</span> t = tail.<span class="fn">load</span>(std::memory_order_acquire);
+    <span class="k">size_t</span> free_cnt = (max_capacity - <span class="n">1</span>) - ((h + max_capacity - t) % max_capacity);
+    <span class="k">size_t</span> w = std::<span class="fn">min</span>(n, free_cnt);
+    <span class="k">for</span> (<span class="k">size_t</span> i = <span class="n">0</span>; i &lt; w; ++i) buffer[(h + i) % max_capacity] = p[i];
+    head.<span class="fn">store</span>((h + w) % max_capacity, std::memory_order_release);
+    <span class="k">if</span> (n &gt; w) dropped.<span class="fn">fetch_add</span>(n - w, std::memory_order_relaxed);
+    <span class="k">return</span> w;
+}
+
+<span class="c">// GIL 只包裹数据搬运，进出都在 GIL 下</span>
+<span class="k">size_t</span> <span class="fn">push</span>(py::array_t&lt;int16_t&gt; data) {
+    <span class="k">auto</span> buf = data.<span class="fn">request</span>();
+    int16_t* ptr = <span class="k">static_cast</span>&lt;int16_t*&gt;(buf.ptr);
+    <span class="k">size_t</span> written = <span class="n">0</span>;
+    {
+        py::gil_scoped_release nogil;
+        written = <span class="fn">do_push</span>(ptr, buf.size);
+    }
+    <span class="k">return</span> written;
+}</pre>
+        <div class="code-foot"><b>CONTRACT</b> <span data-i18n="foot.contract">返回值 &lt; len(data) 表示丢弃，调用方必须记录并告警。head / tail / dropped 均 alignas(64) 防伪共享。</span></div>
+      </div>
+
+      <h3>工具确认 · 零竞态与迟到点击感知</h3>
+      <div class="code">
+        <div class="code-head">
+          <span class="code-path">core/tools_manager.py · PendingConfirmation</span>
+          <span class="code-head-fill"></span>
+          <span class="code-lang">Python</span>
+          <button class="code-copy" type="button">COPY</button>
+        </div>
+<pre><span class="k">def</span> <span class="fn">resolve</span>(self, cid: <span class="t">str</span>, approved: <span class="t">bool</span>) -&gt; <span class="t">bool</span>:
+    <span class="s">"""返回 False 表示该确认已超时失效，UI 需提示"""</span>
+    <span class="k">with</span> self._lock:
+        <span class="k">if</span> cid <span class="k">not in</span> self._events:
+            <span class="k">return</span> <span class="n">False</span>          <span class="c"># 迟到点击</span>
+        self._results[cid] = approved
+        ev = self._events.<span class="fn">pop</span>(cid)
+    ev.<span class="fn">set</span>()
+    <span class="k">return</span> <span class="n">True</span>
+
+<span class="k">def</span> <span class="fn">wait</span>(self, cid: <span class="t">str</span>, timeout: <span class="t">float</span>) -&gt; <span class="t">bool</span>:
+    <span class="k">with</span> self._lock:
+        ev = self._events.<span class="fn">get</span>(cid)
+    <span class="k">if</span> ev <span class="k">is</span> <span class="n">None</span>:
+        <span class="k">return</span> <span class="n">False</span>
+    ok = ev.<span class="fn">wait</span>(timeout)
+    <span class="k">with</span> self._lock:
+        self._events.<span class="fn">pop</span>(cid, <span class="n">None</span>)
+        result = self._results.<span class="fn">pop</span>(cid, <span class="n">False</span>)   <span class="c"># 无论如何都清理</span>
+    <span class="k">return</span> ok <span class="k">and</span> result</pre>
+        <div class="code-foot"><b>ZERO-RACE</b> <span data-i18n="foot.zerorace">resolve 检查 cid 是否存活（防迟到写入）；wait 超时也无条件清理 _results（防泄漏）；返回值用 ok and result 保证超时语义。</span></div>
+      </div>
+
+      <h3>慢任务隔离 · 规避 pickle 崩溃</h3>
+      <div class="code">
+        <div class="code-head">
+          <span class="code-path">core/tools_manager.py · SLOW TASK ISOLATION</span>
+          <span class="code-head-fill"></span>
+          <span class="code-lang">Python</span>
+          <button class="code-copy" type="button">COPY</button>
+        </div>
+<pre><span class="c"># 模块级注册表：慢工具必须是模块顶层函数</span>
+SLOW_TOOL_REGISTRY: <span class="t">dict</span>[<span class="t">str</span>, <span class="t">Callable</span>] = {}
+
+<span class="k">def</span> <span class="fn">download_worker</span>(task_queue, result_queue):
+    <span class="s">"""独立进程：只处理 (job_id, name, kwargs)"""</span>
+    <span class="k">while</span> <span class="n">True</span>:
+        task = task_queue.<span class="fn">get</span>()
+        <span class="k">if</span> task <span class="k">is</span> <span class="n">None</span>:
+            <span class="k">break</span>
+        job_id, name, kwargs = task
+        <span class="k">try</span>:
+            res = SLOW_TOOL_REGISTRY[name](**kwargs)
+            result_queue.<span class="fn">put_nowait</span>((job_id, <span class="s">"success"</span>, res))
+        <span class="k">except</span> <span class="t">Exception</span> <span class="k">as</span> e:
+            result_queue.<span class="fn">put_nowait</span>((job_id, <span class="s">"error"</span>, <span class="fn">str</span>(e)))
+
+<span class="c"># execute 内：job_id 贯穿提交 / 回传 / 查询</span>
+job_id = uuid.<span class="fn">uuid4</span>().hex
+self._download_queue.<span class="fn">put_nowait</span>((job_id, name, kwargs))
+<span class="k">with</span> self._jobs_lock:
+    self._jobs[job_id] = {<span class="s">"status"</span>: <span class="s">"queued"</span>, <span class="s">"result"</span>: <span class="n">None</span>}
+<span class="k">return</span> json.<span class="fn">dumps</span>({<span class="s">"status"</span>: <span class="s">"queued"</span>, <span class="s">"job_id"</span>: job_id})</pre>
+        <div class="code-foot"><b>ANTI-CRASH</b> <span data-i18n="foot.anticrash">子进程只接收 (job_id, name, kwargs)，通过 name 查表；严禁把 self._tools 传进子进程。队列深度 16，满载拒绝。</span></div>
+      </div>
+
+      <div class="note-card">
+        <span class="note-mark">[NOTE]</span>
+        <span>密钥管理、Alist 客户端、并发 pytest 的完整实现见基线文档 §5.3–5.5</span>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section id="s7" class="fade">
+      <div class="sec-head">
+        <div class="sec-eyebrow"><span class="bracket">[</span> §07 · CONSTITUTION <span class="bracket">]</span></div>
+        <h2>工程宪法</h2>
+        <p class="sec-desc" data-i18n="sec.7.desc">绝对不可违背的原则。任何代码评审都必须以此为准绳。</p>
+      </div>
+
+      <ol class="laws">
+        <li><span><b>GIL 精准释放</b>C++ 接口中的 py::gil_scoped_release 必须精确包裹数据拷贝循环。</span></li>
+        <li><span><b>契约明确</b>push 返回 &lt; len(data) 表示丢弃需告警；pop 返回 &lt; size 表示缓冲不足需零填充。</span></li>
+        <li><span><b>TTS 单消费者</b>严禁多线程并发读 stdout；LLM 必须累积到句号才推入 TTS 有界队列。</span></li>
+        <li><span><b>AMBIENT 唤醒词语义</b>唤醒词是唯一对话入口。AMBIENT 态喊唤醒词进 LISTENING；退出内录走快捷键或语音命令。</span></li>
+        <li><span><b>音频三分与补传</b>麦克风采集永不暂停；ASR 上传 TTS 时暂停；Barge-in 时补传最近 300ms 并恢复上传。</span></li>
+        <li><span><b>异常必归 ERROR</b>初始化失败或致命崩溃必须归入 ERROR 态。重启成功才切回 IDLE。</span></li>
+        <li><span><b>工具确认零竞态</b>resolve() 必须返回是否生效的 bool。confirm_ui 抛异常时必须清理 cid。</span></li>
+        <li><span><b>慢任务绝对隔离</b>慢工具必须是模块顶层函数，写入 SLOW_TOOL_REGISTRY；严禁把 self._tools 传进子进程。</span></li>
+        <li><span><b>job_id 贯穿</b>慢任务以 (job_id, name, kwargs) 提交，worker 回传 (job_id, status, result)，对外提供 check_job_status。</span></li>
+        <li><span><b>双向白名单</b>本地模式下，get_schemas 过滤和 execute 校验必须双重生效。</span></li>
+        <li><span><b>UI 线程安全</b>confirm_ui 注入时必须通过 pyqtSignal 派发到主线程。</span></li>
+        <li><span><b>进程启动约束</b>ToolRegistry 不得在模块顶层实例化。入口脚本必须有 if __name__ == "__main__": 保护。</span></li>
+      </ol>
+    </section>
+
+    <!-- 08 -->
+    <section id="s8" class="fade">
+      <div class="sec-head">
+        <div class="sec-eyebrow"><span class="bracket">[</span> §08 · CHANGELOG <span class="bracket">]</span></div>
+        <h2>定稿记录</h2>
+        <p class="sec-desc" data-i18n="sec.8.desc">V5.2 已修复复审中所有 P0 与 P1 问题。以下为变更清单。</p>
+      </div>
+
+      <div class="changelog">
+        <div class="row"><span class="id">P0-01</span><span class="txt">慢任务改为模块级注册表，彻底规避 pickle 崩溃。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P0-02</span><span class="txt">job_id 贯穿提交、回传与查询，新增 check_job_status。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P0-03</span><span class="txt">修正 mp.queues.Full 为 queue.Full。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P0-04</span><span class="txt">补回状态机两条边，唤醒词语义统一为方案 A。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-01</span><span class="txt">慢任务序列化语义统一为“可 pickle”。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-02</span><span class="txt">快任务超时限制加注释，慢 IO 必须标 slow=True。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-03</span><span class="txt">监控线程异常分类处理，不再静默吞掉。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-04</span><span class="txt">close() 加入 join monitor + 清理 _jobs。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-05</span><span class="txt">_jobs 设 1000 条上限，超限清理已完成项。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-06</span><span class="txt">结果队列设 maxsize=64，满时丢弃并记日志。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-07</span><span class="txt">文档声明 close() 强杀 worker 的已知行为。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-08</span><span class="txt">进程启动约束写入代码注释与宪法第 12 条。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-09</span><span class="txt">_jobs 读写统一加锁。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P1-10</span><span class="txt">800ms / 3s 计时关系在转移表明确。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">P2-06</span><span class="txt">补 SPSC 并发测试与确认机制竞态测试。</span><span class="badge">FIXED</span></div>
+        <div class="row"><span class="id">R-13</span><span class="txt">评审13：AMBIENT→IDLE 语音措辞对齐宪法第 4 条（语音「退出会议模式」）。</span><span class="badge note">NOTE</span></div>
+        <div class="row"><span class="id">R-14</span><span class="txt">编号规范：P0/P1/P2 统一两位补零，备注类用 R-xx。</span><span class="badge note">NOTE</span></div>
+      </div>
+
+      <p style="margin-top: 28px;">
+        V5.2 可作为唯一权威文档冻结，进入 Milestone 1 编码。再往下迭代的收益会递减，剩余细节（如慢任务队列深度调优、PROACTIVE_SPEAKING 的 AudioFocus 边界）应在真机联调中根据日志决定，而不是继续在文档里空转。
+      </p>
+
+      <p class="closing">
+        “VoxPilot 始于语音，不止于语音。它是一个懂你环境、能动手执行、有记忆的<em>赛博副驾</em>。”
+      </p>
+    </section>
+
+    <footer>
+      <div class="dc"><span data-i18n="foot.doc">DOCUMENT</span><b>VoxPilot Master Blueprint</b></div>
+      <div class="dc"><span data-i18n="foot.version">VERSION</span><b>V5.2 — Frozen</b></div>
+      <div class="dc"><span data-i18n="foot.reviews">REVIEWS</span><b><span data-i18n="foot.reviews.v">6 rounds</span></b></div>
+      <div class="dc"><span data-i18n="foot.status">STATUS</span><b class="ok">READY</b></div>
+      <div class="dc"><span data-i18n="foot.next">NEXT</span><b>Milestone 1</b></div>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // ===== 中英双语 i18n =====
+  const I18N = {
+    zh: {
+      'hud.sys': '系统正常',
+      'hud.fsm': 'FSM: 9 状态',
+      'hud.reviews': '评审 · 6 轮',
+      'hud.sla': '延迟 SLA: 正常',
+      'toc.s0': '摘要 / ABSTRACT',
+      'toc.s1': '愿景 / VISION',
+      'toc.s2': '路线图 / ROADMAP',
+      'toc.s3': '架构 / ARCHITECTURE',
+      'toc.s4': '能力 / CAPABILITIES',
+      'toc.s5': '状态机 / FSM',
+      'toc.s6': '实现 / IMPLEMENTATION',
+      'toc.s7': '宪法 / CONSTITUTION',
+      'toc.s8': '记录 / CHANGELOG',
+      'cover.label': '项目规格说明书 · REV 5.2',
+      'cover.subtitle': '智能语音领航员',
+      'cover.en': '面向桌面的环境副驾',
+      'cover.lede': '一款具备“眼观六路，耳听八方”能力的 AI PC 环境副驾。本规格书记录其经六轮架构与工程风险评审后的定稿设计，可作为唯一权威施工图纸。',
+      'cover.sp.arch': '架构',
+      'cover.sp.client': '客户端',
+      'cover.sp.engine': '引擎',
+      'cover.sp.status': '状态',
+      'cover.sp.next': '下一阶段',
+      'sec.0.desc': 'VoxPilot 的目标是做一个能听、能看、能动手、也能记住的桌面副驾。本规格书不是概念稿，而是经过多轮代码级复审后的施工图纸。',
+      'sec.1.desc': '始于语音，不止于语音。',
+      'sec.2.desc': '不要在第一天就去死磕微服务或 AEC。按以下里程碑推进，确保项目存活并平滑迭代。',
+      'sec.3.desc': '客户端轻量秒开，引擎承载重型推理。两端通过 WebSocket / gRPC 通信，严禁跨进程传递原始 PCM 流。',
+      'sec.4.desc': '围绕“手、脑、眼、耳、魂”五个维度构建完整的 Agent 闭环。',
+      'sec.5.desc': '8 + 1 态。任何异常必须归入 ERROR 态，防止死循环；prev_state_stack 深度上限 2，栈满拒绝新的主动播报。',
+      'sec.6.desc': 'V5.2 已修复全部 P0 级缺陷：GIL 精准释放、SPSC 语义正确、工具确认零竞态、慢任务进程隔离、job_id 贯穿。',
+      'sec.7.desc': '绝对不可违背的原则。任何代码评审都必须以此为准绳。',
+      'sec.8.desc': 'V5.2 已修复复审中所有 P0 与 P1 问题。以下为变更清单。',
+      'cap.1.title': '手 · 工具系统',
+      'cap.1.desc': '云端 Function Calling 执行系统操作；高危工具异步确认，慢任务进程隔离，双向白名单防止幻觉误操作。',
+      'cap.1.tag': 'job_id 贯穿 · 队列深度 16',
+      'cap.2.title': '脑 · 记忆与 RAG',
+      'cap.2.desc.pre': '短期保留最近 N 轮对话；长期用 ChromaDB 存储，后台异步提取实体与向量化，注册 ',
+      'cap.2.desc.post': ' 按需检索。',
+      'cap.2.tag': 'ChromaDB · 异步向量化',
+      'cap.3.title': '眼 · 屏幕感知',
+      'cap.3.desc.pre': '优先 ',
+      'cap.3.desc.mid': ' 提取 UI 文本树，异常则降级为 ',
+      'cap.3.desc.post': ' 截图；上传云端需显式确认。',
+      'cap.3.tag': '文本树优先 · 隐私确认',
+      'cap.4.title': '耳 · 系统内录',
+      'cap.4.desc.pre': 'WASAPI Loopback 抓取扬声器输出，能量过滤后用 ',
+      'cap.4.desc.post': ' 转文字，触发会议纪要入库。',
+      'cap.4.tag': 'WASAPI · 静音过滤',
+      'cap.5.title': '魂 · 情绪与主动',
+      'cap.5.desc': '情感 TTS 动态调节语速音调；EventScheduler 守护线程按抑制规则主动播报，绝不打搅会议与 TTS。',
+      'cap.5.tag': '抑制规则 · 优先级队列',
+      'sla.1': 'VAD 断句',
+      'sla.2': 'ASR 首字',
+      'sla.3': 'LLM 首 Token',
+      'sla.4': 'TTS 首包',
+      'sla.5': '打断响应',
+      'foot.contract': '返回值 < len(data) 表示丢弃，调用方必须记录并告警。head / tail / dropped 均 alignas(64) 防伪共享。',
+      'foot.zerorace': 'resolve 检查 cid 是否存活（防迟到写入）；wait 超时也无条件清理 _results（防泄漏）；返回值用 ok and result 保证超时语义。',
+      'foot.anticrash': '子进程只接收 (job_id, name, kwargs)，通过 name 查表；严禁把 self._tools 传进子进程。队列深度 16，满载拒绝。',
+      'foot.doc': '文档',
+      'foot.version': '版本',
+      'foot.reviews': '评审',
+      'foot.reviews.v': '6 轮',
+      'foot.status': '状态',
+      'foot.next': '下一步',
+      'ui.langToggle': '切换到英文界面',
+      'ui.toTop': '回到顶部'
+    },
+    en: {
+      'hud.sys': 'SYSTEM NOMINAL',
+      'hud.fsm': 'FSM: 9 STATES',
+      'hud.reviews': 'REVIEWS · 6 ROUNDS',
+      'hud.sla': 'LATENCY SLA: OK',
+      'toc.s0': 'ABSTRACT',
+      'toc.s1': 'VISION',
+      'toc.s2': 'ROADMAP',
+      'toc.s3': 'ARCHITECTURE',
+      'toc.s4': 'CAPABILITIES',
+      'toc.s5': 'FSM',
+      'toc.s6': 'IMPLEMENTATION',
+      'toc.s7': 'CONSTITUTION',
+      'toc.s8': 'CHANGELOG',
+      'cover.label': 'PROJECT SPECIFICATION · REV 5.2',
+      'cover.subtitle': 'Voice Navigator',
+      'cover.en': 'AMBIENT COPILOT FOR THE DESKTOP',
+      'cover.lede': 'An ambient copilot for AI PCs that sees, hears, and acts all around you. This spec records the frozen design after six rounds of architecture and engineering-risk review — the single authoritative build blueprint.',
+      'cover.sp.arch': 'ARCHITECTURE',
+      'cover.sp.client': 'CLIENT',
+      'cover.sp.engine': 'ENGINE',
+      'cover.sp.status': 'STATUS',
+      'cover.sp.next': 'NEXT PHASE',
+      'sec.0.desc': 'VoxPilot is a desktop copilot that hears, sees, acts, and remembers. This is not a concept deck — it is a build blueprint refined through multiple code-level reviews.',
+      'sec.1.desc': 'Starts with voice, goes far beyond voice.',
+      'sec.2.desc': 'Do not fight microservices or AEC on day one. Follow these milestones to keep the project alive and iterate smoothly.',
+      'sec.3.desc': 'A lightweight client opens instantly; the engine carries heavy inference. The two sides talk over WebSocket / gRPC; raw PCM streams must never cross processes.',
+      'sec.4.desc': 'Five dimensions — Hand, Mind, Eye, Ear, Soul — form a complete agent loop.',
+      'sec.5.desc': '8 + 1 states. Every anomaly must settle into ERROR to prevent livelock; prev_state_stack caps at depth 2, blocking new proactive broadcasts when full.',
+      'sec.6.desc': 'V5.2 fixes all P0 defects: precise GIL release, correct SPSC semantics, race-free tool confirmation, slow-task process isolation, job_id end-to-end.',
+      'sec.7.desc': 'Absolute non-negotiables. Every code review must be judged against these.',
+      'sec.8.desc': 'V5.2 fixes every P0 and P1 issue found in review. The change list follows.',
+      'cap.1.title': 'Hand · Tool System',
+      'cap.1.desc': 'Cloud Function Calling executes system actions; high-risk tools require async confirmation, slow tasks run in isolated processes, and a two-way whitelist blocks hallucinated operations.',
+      'cap.1.tag': 'job_id end-to-end · queue depth 16',
+      'cap.2.title': 'Mind · Memory & RAG',
+      'cap.2.desc.pre': 'Short-term keeps the latest N turns; long-term uses ChromaDB with background entity extraction and vectorization, exposing ',
+      'cap.2.desc.post': ' for on-demand lookup.',
+      'cap.2.tag': 'ChromaDB · async vectorization',
+      'cap.3.title': 'Eye · Screen Perception',
+      'cap.3.desc.pre': 'Prefer ',
+      'cap.3.desc.mid': ' to extract the UI text tree; fall back to ',
+      'cap.3.desc.post': ' screenshots on failure; uploading to cloud always requires explicit consent.',
+      'cap.3.tag': 'UI tree first · privacy consent',
+      'cap.4.title': 'Ear · System Loopback',
+      'cap.4.desc.pre': 'WASAPI Loopback captures speaker output; after energy filtering, ',
+      'cap.4.desc.post': ' transcribes it and triggers meeting-note ingestion.',
+      'cap.4.tag': 'WASAPI · silence filtering',
+      'cap.5.title': 'Soul · Emotion & Proactivity',
+      'cap.5.desc': 'Emotional TTS adjusts pace and pitch dynamically; an EventScheduler daemon broadcasts proactively under suppression rules, never interrupting meetings or TTS.',
+      'cap.5.tag': 'suppression rules · priority queue',
+      'sla.1': 'VAD Segmentation',
+      'sla.2': 'ASR First Word',
+      'sla.3': 'LLM First Token',
+      'sla.4': 'TTS First Packet',
+      'sla.5': 'Interrupt Response',
+      'foot.contract': 'A return value < len(data) means dropped; the caller must log and warn. head / tail / dropped are alignas(64) to prevent false sharing.',
+      'foot.zerorace': 'resolve checks whether cid is alive (blocks late writes); wait cleans _results unconditionally on timeout (no leaks); ok and result guarantee timeout semantics.',
+      'foot.anticrash': 'The child process only receives (job_id, name, kwargs) and looks up by name; never pass self._tools into the child. Queue depth 16, rejects when full.',
+      'foot.doc': 'DOCUMENT',
+      'foot.version': 'VERSION',
+      'foot.reviews': 'REVIEWS',
+      'foot.reviews.v': '6 rounds',
+      'foot.status': 'STATUS',
+      'foot.next': 'NEXT',
+      'ui.langToggle': 'Switch to Chinese UI',
+      'ui.toTop': 'Back to top'
+    }
+  };
+
+  let vpLang = 'zh';
+
+  function applyLang(lang) {
+    const dict = I18N[lang] || I18N.zh;
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      const key = el.getAttribute('data-i18n');
+      if (key && dict[key] !== undefined) el.textContent = dict[key];
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(function (el) {
+      const key = el.getAttribute('data-i18n-aria');
+      if (key && dict[key] !== undefined) el.setAttribute('aria-label', dict[key]);
+    });
+    document.documentElement.lang = lang;
+    const toggle = document.getElementById('langToggle');
+    if (toggle) toggle.textContent = lang === 'zh' ? 'EN' : '中';
+    vpLang = lang;
+    try { localStorage.setItem('vp_lang', lang); } catch (e) { /* 隐私模式忽略 */ }
+  }
+
+  (function initLang() {
+    let saved = null;
+    try { saved = localStorage.getItem('vp_lang'); } catch (e) { /* ignore */ }
+    const lang = (saved === 'zh' || saved === 'en')
+      ? saved
+      : ((navigator.language || 'zh').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en');
+    applyLang(lang);
+    const toggle = document.getElementById('langToggle');
+    if (toggle) toggle.addEventListener('click', function () {
+      applyLang(vpLang === 'zh' ? 'en' : 'zh');
+    });
+  })();
+
+  const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 波形 — 动态多频合成音频响应（requestAnimationFrame）
+  (function () {
+    const wave = document.getElementById('wave');
+    if (!wave) return;
+    const N = 64;
+    const bars = [];
+    const FREQ = new Array(N);
+    const PHASE = new Array(N);
+    const ENV = new Array(N);
+
+    // --accent(#3ee0c4) → --accent-2(#f5a524) 线性插值：按柱位渐变
+    const ramp = (i) => {
+      const t = i / (N - 1);
+      const r = Math.round(62 + (245 - 62) * t);
+      const g = Math.round(224 + (165 - 224) * t);
+      const b = Math.round(196 + (36 - 196) * t);
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    };
+
+    for (let i = 0; i < N; i++) {
+      const bar = document.createElement('span');
+      bar.style.height = '46px';
+      bar.style.background = ramp(i);
+      wave.appendChild(bar);
+      bars.push(bar);
+      ENV[i] = Math.sin((i / (N - 1)) * Math.PI) * 0.85 + 0.15;       // 钟形包络
+      FREQ[i] = 1.5 + (i / N) * 4 + Math.random() * 0.8;              // 每柱基频
+      PHASE[i] = Math.random() * 2 * Math.PI;                          // 每柱独立相位
+    }
+
+    const norm = (v) => (v + 1) / 2; // sin → 0~1 归一
+
+    // 渲染一帧：多频正弦叠加 × 包络，scaleY 0.12~1
+    const render = (t) => {
+      const ts = t * 0.001;
+      for (let i = 0; i < N; i++) {
+        const v1 = Math.sin(ts * FREQ[i] + PHASE[i]);
+        const v2 = Math.sin(ts * FREQ[i] * 1.73 + PHASE[i] * 1.31 + 1.7);
+        const v3 = Math.sin(ts * 0.7 + i * 0.12);                     // 全局慢呼吸
+        const v = (norm(v1) * 0.4 + norm(v2) * 0.3 + norm(v3) * 0.3) * ENV[i];
+        const s = 0.12 + v * 0.88;
+        bars[i].style.transform = 'scaleY(' + s.toFixed(3) + ')';
+        bars[i].style.opacity = (0.25 + v * 0.65).toFixed(3);
+      }
+    };
+
+    // 静态降级：prefers-reduced-motion 时只渲染一次柔和波形
+    if (REDUCE_MOTION) {
+      render(3000);
+      return;
+    }
+
+    let rafId = null;
+    let last = 0;
+    let running = false;
+
+    const frame = (now) => {
+      if (now - last >= 33) { // 约 30fps 节流
+        render(now);
+        last = now;
+      }
+      rafId = requestAnimationFrame(frame);
+    };
+
+    const start = () => {
+      if (running || document.hidden) return;
+      running = true;
+      last = performance.now();
+      rafId = requestAnimationFrame(frame);
+    };
+
+    const stop = () => {
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+    };
+
+    // 页面不可见时暂停，恢复可见时继续
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stop(); else start();
+    });
+
+    // 仅波形进入视口才启动，离开视口停止
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) start(); else stop();
+        });
+      }, { threshold: 0.05 });
+      io.observe(wave);
+    } else {
+      start();
+    }
+  })();
+
+  // 扫描线 — 封面可见才运行动画，离开视口暂停
+  (function () {
+    const scan = document.querySelector('.scanline');
+    const cover = document.querySelector('.cover');
+    if (!scan || !cover) return;
+    if (!('IntersectionObserver' in window)) { scan.classList.add('run'); return; }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        scan.classList.toggle('run', e.isIntersecting);
+      });
+    }, { threshold: 0.05 });
+    io.observe(cover);
+  })();
+
+  // 顶部进度条 + 回顶进度环（rAF 节流）
+  const bar = document.getElementById('progress');
+  const toTop = document.getElementById('toTop');
+  const toTopNum = document.getElementById('toTopNum');
+  const ringProg = document.querySelector('.ring-progress');
+  const RING_C = 2 * Math.PI * 20.5;
+  if (ringProg) ringProg.style.strokeDasharray = RING_C.toFixed(3);
+  let scrollTicking = false;
+  const onScroll = () => {
+    if (scrollTicking) return;
+    scrollTicking = true;
+    requestAnimationFrame(() => {
+      scrollTicking = false;
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      const pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+      bar.style.width = pct.toFixed(2) + '%';
+      if (ringProg) ringProg.style.strokeDashoffset = (RING_C * (1 - pct / 100)).toFixed(3);
+      if (toTopNum) toTopNum.textContent = String(Math.min(8, Math.round(pct / 100 * 8))).padStart(2, '0');
+      if (toTop) toTop.classList.toggle('show', h.scrollTop > 240);
+    });
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (toTop) {
+    toTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: REDUCE_MOTION ? 'auto' : 'smooth' });
+    });
+  }
+
+  // 代码块 COPY：无路径信息则不渲染 lang
+  document.querySelectorAll('.code-head').forEach(head => {
+    const path = head.querySelector('.code-path');
+    const lang = head.querySelector('.code-lang');
+    if (lang && path && !path.textContent.trim()) lang.style.display = 'none';
+  });
+  document.querySelectorAll('.code-copy').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const block = btn.closest('.code');
+      const pre = block && block.querySelector('pre');
+      const text = pre ? pre.textContent : '';
+      const done = () => {
+        btn.textContent = 'COPIED';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => {});
+      }
+    });
+  });
+
+  // FSM 表格移动端滑动提示：内容可溢出才显示，滑动后淡出
+  (function () {
+    const wrap = document.getElementById('fsmTableWrap');
+    const hint = document.querySelector('.table-hint');
+    if (!wrap || !hint) return;
+    if (wrap.scrollWidth <= wrap.clientWidth) { hint.classList.add('is-off'); return; }
+    wrap.addEventListener('scroll', () => {
+      if (wrap.scrollLeft > 4) hint.classList.add('gone');
+    }, { passive: true });
+  })();
+
+  // 目录高亮
+  const links = Array.from(document.querySelectorAll('.toc a'));
+  const map = new Map();
+  links.forEach(a => {
+    const el = document.querySelector(a.getAttribute('href'));
+    if (el) map.set(el, a);
+  });
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const active = map.get(e.target);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+
+  map.forEach((_, el) => io.observe(el));
+
+  // 入场
+  const fadeIO = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        fadeIO.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade').forEach(el => fadeIO.observe(el));
+
+  // 章节锚点复制（事件委托）：点击眉题（.sec-eyebrow / h2）→ 复制 URL + #s0x
+  document.addEventListener('click', (e) => {
+    if (window.getSelection().toString().trim()) return;
+    const target = e.target.closest('.sec-eyebrow, .sec-head > h2');
+    if (!target) return;
+    const sec = target.closest('section');
+    if (!sec || !sec.id) return;
+    const url = location.origin + location.pathname + '#' + sec.id;
+    const flash = () => {
+      target.classList.add('copied');
+      clearTimeout(target._copyT);
+      target._copyT = setTimeout(() => target.classList.remove('copied'), 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(flash).catch(() => {});
+    }
+  });
+
+  // 状态 chip 联动：点击 chip 高亮 FSM 中对应源态/目标态行，再点取消，切换 chip 切换
+  (function () {
+    const chips = Array.from(document.querySelectorAll('.states span'));
+    const rows = Array.from(document.querySelectorAll('#fsmTableWrap tbody tr'));
+    if (!chips.length || !rows.length) return;
+    const cell = (r, i) => r.querySelectorAll('td')[i];
+    const hitRows = (name) => rows.filter(r => {
+      const src = cell(r, 0);
+      const dst = cell(r, 3);
+      if (!src || !dst) return false;
+      const s = src.textContent.trim();
+      const d = dst.textContent.trim();
+      return s === name || d === name || (d.startsWith('保持') && d.endsWith(name)) || d.startsWith(name + '（');
+    });
+    let activeChip = null;
+    const clearActive = () => {
+      if (!activeChip) return;
+      const name = activeChip.textContent.trim();
+      activeChip.classList.remove('active');
+      activeChip.setAttribute('aria-pressed', 'false');
+      hitRows(name).forEach(r => r.classList.remove('fsm-hit'));
+      activeChip = null;
+    };
+    const setActive = (chip) => {
+      const name = chip.textContent.trim();
+      if (!name) return;
+      if (activeChip) activeChip.setAttribute('aria-pressed', 'false');
+      chips.forEach(c => c.classList.remove('active'));
+      rows.forEach(r => r.classList.remove('fsm-hit'));
+      activeChip = chip;
+      chip.classList.add('active');
+      chip.setAttribute('aria-pressed', 'true');
+      hitRows(name).forEach(r => r.classList.add('fsm-hit'));
+    };
+    chips.forEach(chip => {
+      const toggle = () => {
+        if (activeChip === chip) { clearActive(); return; }
+        setActive(chip);
+      };
+      chip.addEventListener('click', toggle);
+      chip.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
